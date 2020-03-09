@@ -4,7 +4,7 @@ moves = "<>^v"
 dim = 4
 shape = (dim, dim)
 M = np.zeros(shape=shape, dtype=int)
-num_init = 2
+num_init = 7
 iv = [2, 4]
 id = [0.9, 0.1]
 
@@ -24,31 +24,35 @@ for c, v in zip(ics, ivs):
 print(M.size, ics, ivs, xys)
 while True:
     print(M)
-    inp = input("move (" + moves + ") : ")
-    if inp not in list(moves):
-        print("FU")
+    move = input("move (" + moves + ") : ")
+    if move not in list(moves):
+        print("Illegal Move")
         continue
+
+    def get_next_full(M, row, col):
+        while col < dim:
+            if M[row, col] != 0:
+                return row, col
+            else:
+                col += 1
+        return row, col - 1
+
+    def move_left(M, row, col):
+        next_full = get_next_full(M, row, col + 1)
+        curr = row, col
+        if M[curr] == 0:
+            M[curr] += M[next_full]
+            M[next_full] = 0
+
+        next_full = get_next_full(M, row, col + 1)
+        # if 0 == M[curr] != M[next_full] or M[next_full] == M[curr]:
+        if M[curr] == M[next_full]:
+            M[curr] += M[next_full]
+            M[next_full] = 0
 
     for row in range(dim):
         for col in range(dim):
-            next = col + 1
-            if M[row, col] == 0:
-                while next < dim and M[row, next] == 0:
-                    next += 1
-                if next == dim:
-                    continue
-                if M[row, next] == M[row, col]:
-                    M[row, col] += M[row, next]
-                    M[row, next] = 0
-
-            while next < dim and M[row, next] == 0:
-                next += 1
-            if next == dim:
-                continue
-
-            if M[row, next] == M[row, col]:
-                M[row, col] += M[row, next]
-                M[row, next] = 0
+            move_left(M, row, col)
 
     # MOVE LEFT
     # for row in range(dim):
