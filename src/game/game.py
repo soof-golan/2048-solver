@@ -12,7 +12,7 @@ init_dist = (0.9, 0.1)
 
 
 def xy(coord):
-    return coord % dim, coord // dim
+    return coord // dim, coord % dim,
 
 
 def init(num_init=2):
@@ -60,6 +60,7 @@ def move_left(M):
 
 
 def flip(M: np.array, move):
+    M = M.copy()
     if move is LEFT:
         pass
     if move is RIGHT:
@@ -74,6 +75,7 @@ def flip(M: np.array, move):
 
 
 def flop(M, move):
+    M = M.copy()
     if move is LEFT:
         pass
     if move is RIGHT:
@@ -92,7 +94,7 @@ def get_new_num():
 
 def get_vacant(M):
     n = M.shape[0]
-    vacant = [i for i in range(n ** 2) if i not in np.flatnonzero(M)]
+    vacant = [i for i in range(dim ** 2) if i not in np.flatnonzero(M)]
     return xy(np.random.choice(vacant))
 
 
@@ -105,7 +107,7 @@ def player_action(M, move):
     M = flip(M, move)
     M = move_left(M)
     M = flop(M, move)
-    return M
+    return M.copy()
 
 
 def game_done(M):
@@ -118,20 +120,25 @@ def game_done(M):
 
 def pp(M):
     df = pd.DataFrame(M)
+    df.replace({0: ""}, inplace=True)
     print(df)
 
 
 def main():
+    click.clear()
+
     M = init(2)
+    pp(M)
     while True:
         click.clear()
         pp(M)
-        # input(f"move ({moves}) : ")
-        # move = sys.stdin.read(1)
-        move = click.getchar()
-        # move = input("move (" + moves + ") : ")
-        if move not in list(moves):
-            print("Illegal Move")
+        print("move (" + moves + ") : ")
+        # move = click.getchar(echo=True)
+        move =input()
+        while move not in list(moves):
+            print(" -> Illegal Move")
+            move = input()
+            # move = click.getchar(echo=True)
             continue
 
 
@@ -143,6 +150,8 @@ def main():
 
         if game_done(M):
             break
+
+
 
     pp(M)
 
