@@ -60,7 +60,6 @@ def move_left(M):
 
 
 def flip(M: np.array, move):
-    M = M.copy()
     if move is LEFT:
         pass
     if move is RIGHT:
@@ -69,13 +68,13 @@ def flip(M: np.array, move):
         M = M.T
     if move is DOWN:
         M = np.flip(m=M, axis=0)
+        # pp(M)
         M = M.T
+        # pp(M)
 
     return M
 
-
 def flop(M, move):
-    M = M.copy()
     if move is LEFT:
         pass
     if move is RIGHT:
@@ -120,25 +119,26 @@ def game_done(M):
 
 def pp(M):
     df = pd.DataFrame(M)
+    # df.style.hide_index()
+    # df.style.hide_columns(df.columns)
     df.replace({0: ""}, inplace=True)
     print(df)
 
 
 def main():
     click.clear()
-
     M = init(2)
-    pp(M)
-    while True:
+
+    while not game_done(M):
         click.clear()
         pp(M)
         print("move (" + moves + ") : ")
-        # move = click.getchar(echo=True)
-        move =input()
+        move = click.getchar(echo=True)
+        # move =input()
         while move not in list(moves):
             print(" -> Illegal Move")
-            move = input()
-            # move = click.getchar(echo=True)
+            # move = input()
+            move = click.getchar(echo=True)
             continue
 
 
@@ -147,11 +147,7 @@ def main():
         change = np.logical_xor(M, prev)
         if np.any(change):
             M = fill(M)
-
-        if game_done(M):
-            break
-
-
+            pass
 
     pp(M)
 
