@@ -1,6 +1,8 @@
+#!/usr/bin/env python3.7
 import numpy as np
 import click
 import pandas as pd
+import pygame
 
 moves = "<>^V"
 LEFT, RIGHT, UP, DOWN = tuple(list(moves))
@@ -28,7 +30,6 @@ def init(num_init=2):
 
     return M
 
-
 def get_next_full(M, row, col):
     while col < dim:
         if M[row, col] != 0:
@@ -36,7 +37,6 @@ def get_next_full(M, row, col):
         else:
             col += 1
     return row, col - 1
-
 
 def move_cell(M, row, col):
     next_full = get_next_full(M, row, col + 1)
@@ -106,13 +106,12 @@ def player_action(M, move):
     M = flip(M, move)
     M = move_left(M)
     M = flop(M, move)
-    return M.copy()
+    return M
 
 
 def game_done(M):
-    ref = M.copy()
     for mv in moves:
-        if np.any(np.logical_xor(player_action(M.copy(), mv), ref)):
+        if np.any(np.logical_xor(player_action(M.copy(), mv), M)):
             return False
     else:
         return True
@@ -124,23 +123,22 @@ def pp(M):
     df.replace({0: ""}, inplace=True)
     print(df)
 
+def get_input() -> str:
+    print("move (" + moves + ") : ")
+    move = input()
+    assert move in legal_moves, "Illegal Move"
+    return move
 
-def main():
-    click.clear()
+def game():
     M = init(2)
-
     while not game_done(M):
         click.clear()
         pp(M)
-        print("move (" + moves + ") : ")
-        move = click.getchar(echo=True)
-        # move =input()
-        while move not in list(moves):
-            print(" -> Illegal Move")
-            # move = input()
-            move = click.getchar(echo=True)
+        try:
+            move = get_input()
+        except AssertionError as e:
+            print(e)
             continue
-
 
         prev = M.copy()
         M = player_action(M, move)
@@ -151,5 +149,14 @@ def main():
 
     pp(M)
 
+
+class Game(object):
+    """docstring for Game"""
+
+    def __init__(self, dim=4, num_init=2):
+        super(Game, self).__init__()
+        self.dim = dim
+        
+
 if __name__ == "__main__":
-    main()
+    game()
