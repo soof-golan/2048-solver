@@ -1,153 +1,164 @@
 #!/usr/bin/env python3.7
 import numpy as np
-import click
 import pandas as pd
 import pygame
 
-moves = "<>^V"
-LEFT, RIGHT, UP, DOWN = tuple(list(moves))
-dim = 4
-shape = (dim, dim)
+"""
+https://github.com/TheAILearner/Training-Snake-Game-With-Genetic-Algorithm
+"""
+
+legal_moves = "<>^v"
+LEFT, RIGHT, UP, DOWN = tuple(list(legal_moves))
+DIM = 4
+shape = (DIM, DIM)
 
 init_vals = (2, 4)
 init_dist = (0.9, 0.1)
 
 
 def xy(coord):
-    return coord // dim, coord % dim,
+    return coord // DIM, coord % DIM,
 
 
 def init(num_init=2):
     assert sum(init_dist) == 1, "Dist must be 1"
     assert len(init_dist) == len(init_vals), "Vals and dist must be the same length"
-    M : np.array = np.zeros(shape=shape, dtype=int)
+    grid: np.array = np.zeros(shape=shape, dtype=int)
 
     ivs = np.random.choice(a=init_vals, size=num_init, p=init_dist)
-    ics = np.random.choice(a=range(M.size), size=num_init, replace=False)
+    ics = np.random.choice(a=range(grid.size), size=num_init, replace=False)
 
     for c, v in zip(ics, ivs):
-        M[xy(c)] = v
+        grid[divmod(c, DIM)] = v
 
-    return M
+    return grid
 
-def get_next_full(M, row, col):
-    while col < dim:
-        if M[row, col] != 0:
+
+def get_next_full(grid: np.array, row: int, col: int):
+    while col < DIM:
+        if grid[row, col] != 0:
             return row, col
         else:
             col += 1
     return row, col - 1
 
-def move_cell(M, row, col):
-    next_full = get_next_full(M, row, col + 1)
+
+def move_cell(grid: np.array, row: int, col: int):
+    next_full = get_next_full(grid, row, col + 1)
     curr = row, col
-    if M[curr] == 0:
-        M[curr] += M[next_full]
-        M[next_full] = 0
+    if grid[curr] == 0:
+        grid[curr] += grid[next_full]
+        grid[next_full] = 0
 
-    next_full = get_next_full(M, row, col + 1)
+    next_full = get_next_full(grid, row, col + 1)
     # if 0 == M[curr] != M[next_full] or M[next_full] == M[curr]:
-    if M[curr] == M[next_full]:
-        M[curr] += M[next_full]
-        M[next_full] = 0
+    if grid[curr] == grid[next_full]:
+        grid[curr] += grid[next_full]
+        grid[next_full] = 0
 
 
-def move_left(M):
-    for row in range(dim):
-        for col in range(dim):
-            move_cell(M, row, col)
-    return M
+def move_left(normalized_grid):
+    for row in range(DIM):
+        for col in range(DIM):
+            move_cell(normalized_grid, row, col)
+    return normalized_grid
 
 
-def flip(M: np.array, move):
+def flip(grid: np.array, move):
     if move is LEFT:
         pass
     if move is RIGHT:
-        M = np.flip(m=M, axis=1)
+        grid = np.flip(m=grid, axis=1)
     if move is UP:
-        M = M.T
+        grid = grid.T
     if move is DOWN:
-        M = np.flip(m=M, axis=0)
-        # pp(M)
-        M = M.T
-        # pp(M)
+        grid = np.flip(m=grid, axis=0)
+        grid = grid.T
+    return grid
 
-    return M
 
-def flop(M, move):
+def flop(grid, move):
     if move is LEFT:
         pass
     if move is RIGHT:
-        M = np.flip(m=M, axis=1)
+        grid = np.flip(m=grid, axis=1)
     if move is UP:
-        M = M.T
+        grid = grid.T
     if move is DOWN:
-        M = M.T
-        M = np.flip(m=M, axis=0)
-    return M
+        grid = grid.T
+        grid = np.flip(m=grid, axis=0)
+    return grid
 
 
 def get_new_num():
     return np.random.choice(a=init_vals, p=init_dist)
 
 
-def get_vacant(M):
-    n = M.shape[0]
-    vacant = [i for i in range(dim ** 2) if i not in np.flatnonzero(M)]
-    return xy(np.random.choice(vacant))
+def get_vacant(partially_filled_grid):
+    # n = partially_filled_grid.shape[0]
+    vacant = [i for i in range(DIM ** 2) if i not in np.flatnonzero(partially_filled_grid)]
+    return divmod(np.random.choice(vacant), DIM)
 
 
-def fill(M):
-    M[get_vacant(M)] = get_new_num()
-    return M
+def fill(grid):
+    grid[get_vacant(grid)] = get_new_num()
+    return grid
 
 
-def player_action(M, move):
-    M = flip(M, move)
-    M = move_left(M)
-    M = flop(M, move)
-    return M
+def player_action(grid, move):
+    grid = flip(grid, move)
+    grid = move_left(grid)
+    grid = flop(grid, move)
+    return grid
 
 
-def game_done(M):
-    for mv in moves:
-        if np.any(np.logical_xor(player_action(M.copy(), mv), M)):
+def game_done(grid):
+    for move in legal_moves:
+        if np.any(
+                np.logical_xor(
+                    player_action(grid.copy(), move),
+                    grid
+                )
+        ):
             return False
     else:
+        print("Game Done!")
         return True
 
-def pp(M):
-    df = pd.DataFrame(M)
-    # df.style.hide_index()
-    # df.style.hide_columns(df.columns)
+
+def pp(matrix):
+    df = pd.DataFrame(matrix)
+    df.style.hide_index()
+    df.style.hide_columns(df.columns)
     df.replace({0: ""}, inplace=True)
     print(df)
 
+
 def get_input() -> str:
-    print("move (" + moves + ") : ")
+    print("move (" + legal_moves + ") : ")
     move = input()
     assert move in legal_moves, "Illegal Move"
     return move
 
+
 def game():
-    M = init(2)
-    while not game_done(M):
-        click.clear()
-        pp(M)
+    grid = init(2)
+    while not game_done(grid):
+        pp(grid)
         try:
             move = get_input()
         except AssertionError as e:
             print(e)
             continue
 
-        prev = M.copy()
-        M = player_action(M, move)
-        change = np.logical_xor(M, prev)
+        prev = grid.copy()
+        grid = player_action(grid, move)
+        change = np.logical_xor(grid, prev)
         if np.any(change):
-            M = fill(M)
+            grid = fill(grid)
             pass
 
-    pp(M)
+    pp(grid)
 
 
 class Game(object):
@@ -156,7 +167,7 @@ class Game(object):
     def __init__(self, dim=4, num_init=2):
         super(Game, self).__init__()
         self.dim = dim
-        
+
 
 if __name__ == "__main__":
     game()
